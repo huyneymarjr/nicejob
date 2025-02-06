@@ -1,69 +1,82 @@
-import { callFetchJob } from '@/config/api';
-import { LOCATION_LIST, convertSlug, getLocationName } from '@/config/utils';
-import { IJob } from '@/types/backend';
-import { EnvironmentOutlined, ThunderboltOutlined } from '@ant-design/icons';
-import { Card, Col, Empty, Pagination, Row, Spin } from 'antd';
-import { useState, useEffect } from 'react';
-import { isMobile } from 'react-device-detect';
-import { Link, useNavigate } from 'react-router-dom';
-import styles from 'styles/client.module.scss';
-import dayjs from 'dayjs';
-import relativeTime from 'dayjs/plugin/relativeTime';
-dayjs.extend(relativeTime)
+import { callFetchJob } from "@/config/api"
+import {
+    LOCATION_LIST,
+    convertSlug,
+    getLocationName,
+    getTimeAgo,
+} from "@/config/utils"
+import { IJob } from "@/types/backend"
+import { EnvironmentOutlined, ThunderboltOutlined } from "@ant-design/icons"
+import { Card, Col, ConfigProvider, Empty, Pagination, Row, Spin } from "antd"
+import { useState, useEffect } from "react"
+import { isMobile } from "react-device-detect"
+import { Link, useLocation, useNavigate } from "react-router-dom"
+import styles from "styles/client.module.scss"
+import dayjs from "dayjs"
 
 interface IProps {
-    showPagination?: boolean;
+    showPagination?: boolean
 }
 
 const JobCard = (props: IProps) => {
-    const { showPagination = false } = props;
+    const { showPagination = false } = props
 
-    const [displayJob, setDisplayJob] = useState<IJob[] | null>(null);
-    const [isLoading, setIsLoading] = useState<boolean>(false);
-
-    const [current, setCurrent] = useState(1);
-    const [pageSize, setPageSize] = useState(5);
-    const [total, setTotal] = useState(0);
-    const [filter, setFilter] = useState("");
-    const [sortQuery, setSortQuery] = useState("sort=-updatedAt");
-    const navigate = useNavigate();
-
+    const [displayJob, setDisplayJob] = useState<IJob[] | null>(null)
+    const [isLoading, setIsLoading] = useState<boolean>(false)
+    const checkHome = useLocation()
+    const [current, setCurrent] = useState(1)
+    const [pageSize, setPageSize] = useState(checkHome.pathname === "/" ? 6 : 8)
+    const [total, setTotal] = useState(0)
+    const [filter, setFilter] = useState("")
+    const [sortQuery, setSortQuery] = useState("sort=-updatedAt")
+    const navigate = useNavigate()
+    const location = useLocation()
     useEffect(() => {
-        fetchJob();
-    }, [current, pageSize, filter, sortQuery]);
+        fetchJob()
+    }, [current, pageSize, filter, sortQuery, location.search])
 
     const fetchJob = async () => {
         setIsLoading(true)
-        let query = `current=${current}&pageSize=${pageSize}`;
+        let query = `current=${current}&pageSize=${pageSize}`
         if (filter) {
-            query += `&${filter}`;
+            query += `&${filter}`
         }
         if (sortQuery) {
-            query += `&${sortQuery}`;
+            query += `&${sortQuery}`
         }
+        const searchParams = new URLSearchParams(location.search)
+        const skills = searchParams.get("skills")
+        const locations = searchParams.get("location")
 
-        const res = await callFetchJob(query);
+        if (skills) {
+            query += `&skills=${skills}`
+        }
+        if (locations) {
+            query += `&location=${locations}`
+        }
+        const res = await callFetchJob(query)
         if (res && res.data) {
-            setDisplayJob(res.data.result);
+            setDisplayJob(res.data.result)
             setTotal(res.data.meta.total)
         }
         setIsLoading(false)
     }
 
-
-
-    const handleOnchangePage = (pagination: { current: number, pageSize: number }) => {
+    const handleOnchangePage = (pagination: {
+        current: number
+        pageSize: number
+    }) => {
         if (pagination && pagination.current !== current) {
             setCurrent(pagination.current)
         }
         if (pagination && pagination.pageSize !== pageSize) {
             setPageSize(pagination.pageSize)
-            setCurrent(1);
+            setCurrent(1)
         }
     }
 
     const handleViewDetailJob = (item: IJob) => {
-        const slug = convertSlug(item.name);
+        const slug = convertSlug(item.name)
         navigate(`/job/${slug}?id=${item._id}`)
     }
 
@@ -73,64 +86,154 @@ const JobCard = (props: IProps) => {
                 <Spin spinning={isLoading} tip="Loading...">
                     <Row gutter={[20, 20]}>
                         <Col span={24}>
-                            <div className={isMobile ? styles["dflex-mobile"] : styles["dflex-pc"]}>
-                                <span className={styles["title"]}>Công Việc Mới Nhất</span>
-                                {!showPagination &&
-                                    <Link to="job">Xem tất cả</Link>
-                                }
+                            <div
+                                className={"flex justify-between items-center"}
+                            >
+                                <span className={"text-[20px] font-bold"}>
+                                    Công Việc Mới Nhất
+                                </span>
+                                {!showPagination && (
+                                    <Link
+                                        to="job"
+                                        className="text-[16px] hover:underline button-all-link-job"
+                                    >
+                                        Xem tất cả
+                                    </Link>
+                                )}
                             </div>
                         </Col>
 
-                        {displayJob?.map(item => {
-                            return (
-                                <Col span={24} md={12} key={item._id}>
-                                    <Card size="small" title={null} hoverable
-                                        onClick={() => handleViewDetailJob(item)}
-                                    >
-                                        <div className={styles["card-job-content"]}>
-                                            <div className={styles["card-job-left"]}>
-                                                <img
-                                                    alt="example"
-                                                    src={`${import.meta.env.VITE_BACKEND_URL}/images/company/${item?.company?.logo}`}
-                                                />
+                        {displayJob
+                            ?.filter((item) => item.isActive)
+                            .map((item) => {
+                                return (
+                                    <Col span={24} md={12} key={item._id}>
+                                        <Card
+                                            size="small"
+                                            title={null}
+                                            hoverable
+                                            onClick={() =>
+                                                handleViewDetailJob(item)
+                                            }
+                                            className="hover:scale-[1.05] transition-transform duration-500 hover:z-20 card-detail-job"
+                                        >
+                                            <div
+                                                className={
+                                                    styles["card-job-content"]
+                                                }
+                                            >
+                                                <div
+                                                    className={
+                                                        styles["card-job-left"]
+                                                    }
+                                                >
+                                                    <img
+                                                        alt="example"
+                                                        src={`${
+                                                            import.meta.env
+                                                                .VITE_BACKEND_URL
+                                                        }/images/company/${
+                                                            item?.company?.logo
+                                                        }`}
+                                                        className="object-contain max-h-[80px]"
+                                                    />
+                                                </div>
+                                                <div
+                                                    className={
+                                                        styles["card-job-right"]
+                                                    }
+                                                >
+                                                    <div
+                                                        className={
+                                                            styles["job-title"]
+                                                        }
+                                                    >
+                                                        {item.name}
+                                                    </div>
+                                                    <div
+                                                        className={
+                                                            styles[
+                                                                "job-location"
+                                                            ]
+                                                        }
+                                                    >
+                                                        <EnvironmentOutlined
+                                                            style={{
+                                                                color: "#58aaab",
+                                                            }}
+                                                        />
+                                                        &nbsp;
+                                                        {getLocationName(
+                                                            item.location
+                                                        )}
+                                                    </div>
+                                                    <div>
+                                                        <ThunderboltOutlined
+                                                            style={{
+                                                                color: "orange",
+                                                            }}
+                                                        />
+                                                        &nbsp;
+                                                        {(
+                                                            item.salary + ""
+                                                        )?.replace(
+                                                            /\B(?=(\d{3})+(?!\d))/g,
+                                                            ","
+                                                        )}{" "}
+                                                        đ
+                                                    </div>
+                                                    <div
+                                                        className={
+                                                            "block float-right text-[#919191]"
+                                                        }
+                                                    >
+                                                        {getTimeAgo(
+                                                            item.updatedAt
+                                                        )}
+                                                    </div>
+                                                </div>
                                             </div>
-                                            <div className={styles["card-job-right"]}>
-                                                <div className={styles["job-title"]}>{item.name}</div>
-                                                <div className={styles["job-location"]}><EnvironmentOutlined style={{ color: '#58aaab' }} />&nbsp;{getLocationName(item.location)}</div>
-                                                <div><ThunderboltOutlined style={{ color: 'orange' }} />&nbsp;{(item.salary + "")?.replace(/\B(?=(\d{3})+(?!\d))/g, ',')} đ</div>
-                                                <div className={styles["job-updatedAt"]}>{dayjs(item.updatedAt).fromNow()}</div>
-                                            </div>
-                                        </div>
+                                        </Card>
+                                    </Col>
+                                )
+                            })}
 
-                                    </Card>
-                                </Col>
-                            )
-                        })}
-
-
-                        {(!displayJob || displayJob && displayJob.length === 0)
-                            && !isLoading &&
-                            <div className={styles["empty"]}>
-                                <Empty description="Không có dữ liệu" />
-                            </div>
-                        }
+                        {(!displayJob ||
+                            (displayJob && displayJob.length === 0)) &&
+                            !isLoading && (
+                                <div className={styles["empty"]}>
+                                    <Empty description="Không có dữ liệu" />
+                                </div>
+                            )}
                     </Row>
-                    {showPagination && <>
-                        <div style={{ marginTop: 30 }}></div>
-                        <Row style={{ display: "flex", justifyContent: "center" }}>
-                            <Pagination
-                                current={current}
-                                total={total}
-                                pageSize={pageSize}
-                                responsive
-                                onChange={(p: number, s: number) => handleOnchangePage({ current: p, pageSize: s })}
-                            />
-                        </Row>
-                    </>}
+                    {showPagination && (
+                        <>
+                            <Row
+                                style={{
+                                    display: "flex",
+                                    justifyContent: "center",
+                                }}
+                                className="my-[30px]"
+                            >
+                                <Pagination
+                                    current={current}
+                                    total={total}
+                                    pageSize={pageSize}
+                                    responsive
+                                    onChange={(p: number, s: number) =>
+                                        handleOnchangePage({
+                                            current: p,
+                                            pageSize: s,
+                                        })
+                                    }
+                                />
+                            </Row>
+                        </>
+                    )}
                 </Spin>
             </div>
         </div>
     )
 }
 
-export default JobCard;
+export default JobCard

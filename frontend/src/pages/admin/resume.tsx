@@ -1,60 +1,75 @@
-import DataTable from "@/components/client/data-table";
-import { useAppDispatch, useAppSelector } from "@/redux/hooks";
-import { IResume } from "@/types/backend";
-import { DeleteOutlined, EditOutlined, PlusOutlined } from "@ant-design/icons";
-import { ActionType, ProColumns, ProFormSelect } from '@ant-design/pro-components';
-import { Button, Popconfirm, Select, Space, Tag, message, notification } from "antd";
-import { useState, useRef } from 'react';
-import dayjs from 'dayjs';
-import { callDeleteResume } from "@/config/api";
-import queryString from 'query-string';
-import { useNavigate } from "react-router-dom";
-import { fetchResume } from "@/redux/slice/resumeSlide";
-import ViewDetailResume from "@/components/admin/resume/view.resume";
-import { ALL_PERMISSIONS } from "@/config/permissions";
-import Access from "@/components/share/access";
+import DataTable from "@/components/client/data-table"
+import { useAppDispatch, useAppSelector } from "@/redux/hooks"
+import { IResume } from "@/types/backend"
+import { DeleteOutlined, EditOutlined, PlusOutlined } from "@ant-design/icons"
+import {
+    ActionType,
+    ProColumns,
+    ProFormSelect,
+} from "@ant-design/pro-components"
+import {
+    Button,
+    Popconfirm,
+    Select,
+    Space,
+    Tag,
+    message,
+    notification,
+} from "antd"
+import { useState, useRef } from "react"
+import dayjs from "dayjs"
+import { callDeleteResume } from "@/config/api"
+import queryString from "query-string"
+import { useNavigate } from "react-router-dom"
+import { fetchResume } from "@/redux/slice/resumeSlide"
+import ViewDetailResume from "@/components/admin/resume/view.resume"
+import { ALL_PERMISSIONS } from "@/config/permissions"
+import Access from "@/components/share/access"
 
 const ResumePage = () => {
-    const tableRef = useRef<ActionType>();
+    const tableRef = useRef<ActionType>()
 
-    const isFetching = useAppSelector(state => state.resume.isFetching);
-    const meta = useAppSelector(state => state.resume.meta);
-    const resumes = useAppSelector(state => state.resume.result);
-    const dispatch = useAppDispatch();
+    const isFetching = useAppSelector((state) => state.resume.isFetching)
+    const meta = useAppSelector((state) => state.resume.meta)
+    const resumes = useAppSelector((state) => state.resume.result)
+    const dispatch = useAppDispatch()
 
-    const [dataInit, setDataInit] = useState<IResume | null>(null);
-    const [openViewDetail, setOpenViewDetail] = useState<boolean>(false);
+    const [dataInit, setDataInit] = useState<IResume | null>(null)
+    const [openViewDetail, setOpenViewDetail] = useState<boolean>(false)
 
     const handleDeleteResume = async (_id: string | undefined) => {
         if (_id) {
-            const res = await callDeleteResume(_id);
+            const res = await callDeleteResume(_id)
             if (res && res.data) {
-                message.success('Xóa Resume thành công');
-                reloadTable();
+                message.success("Xóa Resume thành công")
+                reloadTable()
             } else {
                 notification.error({
-                    message: 'Có lỗi xảy ra',
-                    description: res.message
-                });
+                    message: "Có lỗi xảy ra",
+                    description: res.message,
+                })
             }
         }
     }
 
     const reloadTable = () => {
-        tableRef?.current?.reload();
+        tableRef?.current?.reload()
     }
 
     const columns: ProColumns<IResume>[] = [
         {
-            title: 'Id',
-            dataIndex: '_id',
+            title: "Mã",
+            dataIndex: "_id",
             width: 250,
             render: (text, record, index, action) => {
                 return (
-                    <a href="#" onClick={() => {
-                        setOpenViewDetail(true);
-                        setDataInit(record);
-                    }}>
+                    <a
+                        href="#"
+                        onClick={() => {
+                            setOpenViewDetail(true)
+                            setDataInit(record)
+                        }}
+                    >
                         {record._id}
                     </a>
                 )
@@ -62,8 +77,8 @@ const ResumePage = () => {
             hideInSearch: true,
         },
         {
-            title: 'Trạng Thái',
-            dataIndex: 'status',
+            title: "Trạng Thái",
+            dataIndex: "status",
             sorter: true,
             renderFormItem: (item, props, form) => (
                 <ProFormSelect
@@ -71,47 +86,71 @@ const ResumePage = () => {
                     mode="multiple"
                     allowClear
                     valueEnum={{
-                        PENDING: 'PENDING',
-                        REVIEWING: 'REVIEWING',
-                        APPROVED: 'APPROVED',
-                        REJECTED: 'REJECTED',
+                        PENDING: "Đang chờ",
+                        REVIEWING: "Đang xem xét",
+                        APPROVED: "Đã duyệt",
+                        REJECTED: "Đã từ chối",
                     }}
                     placeholder="Chọn level"
                 />
             ),
+            render: (text, record, index, action) => {
+                return (
+                    <Tag
+                        color={
+                            record.status === "PENDING"
+                                ? "orange"
+                                : record.status === "REVIEWING"
+                                ? "blue"
+                                : record.status === "APPROVED"
+                                ? "green"
+                                : "red"
+                        }
+                        className="uppercase font-[600]"
+                    >
+                        {record.status === "PENDING"
+                            ? "Đang chờ"
+                            : record.status === "REVIEWING"
+                            ? "Đang xem xét"
+                            : record.status === "APPROVED"
+                            ? "Đã duyệt"
+                            : "Đã từ chối"}
+                    </Tag>
+                )
+            },
         },
 
         {
-            title: 'Job',
+            title: "Công việc",
             dataIndex: ["jobId", "name"],
             hideInSearch: true,
         },
         {
-            title: 'Company',
+            title: "Công ty",
             dataIndex: ["companyId", "name"],
             hideInSearch: true,
         },
 
         {
-            title: 'CreatedAt',
-            dataIndex: 'createdAt',
+            title: "Ngày tạo",
+            dataIndex: "createdAt",
             width: 200,
             sorter: true,
             render: (text, record, index, action) => {
                 return (
-                    <>{dayjs(record.createdAt).format('DD-MM-YYYY HH:mm:ss')}</>
+                    <>{dayjs(record.createdAt).format("DD-MM-YYYY HH:mm:ss")}</>
                 )
             },
             hideInSearch: true,
         },
         {
-            title: 'UpdatedAt',
-            dataIndex: 'updatedAt',
+            title: "Ngày cập nhật",
+            dataIndex: "updatedAt",
             width: 200,
             sorter: true,
             render: (text, record, index, action) => {
                 return (
-                    <>{dayjs(record.updatedAt).format('DD-MM-YYYY HH:mm:ss')}</>
+                    <>{dayjs(record.updatedAt).format("DD-MM-YYYY HH:mm:ss")}</>
                 )
             },
             hideInSearch: true,
@@ -155,72 +194,80 @@ const ResumePage = () => {
         //     ),
 
         // },
-    ];
+    ]
 
     const buildQuery = (params: any, sort: any, filter: any) => {
-        const clone = { ...params };
+        const clone = { ...params }
         // if (clone.name) clone.name = `/${clone.name}/i`;
         // if (clone.salary) clone.salary = `/${clone.salary}/i`;
         if (clone?.status?.length) {
-            clone.status = clone.status.join(",");
+            clone.status = clone.status.join(",")
         }
 
-        let temp = queryString.stringify(clone);
+        let temp = queryString.stringify(clone)
 
-        let sortBy = "";
+        let sortBy = ""
         if (sort && sort.status) {
-            sortBy = sort.status === 'ascend' ? "sort=status" : "sort=-status";
+            sortBy = sort.status === "ascend" ? "sort=status" : "sort=-status"
         }
 
         if (sort && sort.createdAt) {
-            sortBy = sort.createdAt === 'ascend' ? "sort=createdAt" : "sort=-createdAt";
+            sortBy =
+                sort.createdAt === "ascend"
+                    ? "sort=createdAt"
+                    : "sort=-createdAt"
         }
         if (sort && sort.updatedAt) {
-            sortBy = sort.updatedAt === 'ascend' ? "sort=updatedAt" : "sort=-updatedAt";
+            sortBy =
+                sort.updatedAt === "ascend"
+                    ? "sort=updatedAt"
+                    : "sort=-updatedAt"
         }
 
         //mặc định sort theo updatedAt
         if (Object.keys(sortBy).length === 0) {
-            temp = `${temp}&sort=-updatedAt`;
+            temp = `${temp}&sort=-updatedAt`
         } else {
-            temp = `${temp}&${sortBy}`;
+            temp = `${temp}&${sortBy}`
         }
 
-        temp += "&populate=companyId,jobId&fields=companyId._id, companyId.name, companyId.logo, jobId._id, jobId.name";
-        return temp;
+        temp +=
+            "&populate=companyId,jobId&fields=companyId._id, companyId.name, companyId.logo, jobId._id, jobId.name"
+        return temp
     }
 
     return (
         <div>
-            <Access
-                permission={ALL_PERMISSIONS.RESUMES.GET_PAGINATE}
-            >
+            <Access permission={ALL_PERMISSIONS.RESUMES.GET_PAGINATE}>
                 <DataTable<IResume>
                     actionRef={tableRef}
-                    headerTitle="Danh sách Resumes"
+                    headerTitle="Danh sách hồ sơ"
                     rowKey="_id"
                     loading={isFetching}
                     columns={columns}
                     dataSource={resumes}
                     request={async (params, sort, filter): Promise<any> => {
-                        const query = buildQuery(params, sort, filter);
+                        const query = buildQuery(params, sort, filter)
                         dispatch(fetchResume({ query }))
                     }}
                     scroll={{ x: true }}
-                    pagination={
-                        {
-                            current: meta.current,
-                            pageSize: meta.pageSize,
-                            showSizeChanger: true,
-                            total: meta.total,
-                            showTotal: (total, range) => { return (<div> {range[0]}-{range[1]} trên {total} rows</div>) }
-                        }
-                    }
+                    pagination={{
+                        current: meta.current,
+                        pageSize: meta.pageSize,
+                        showSizeChanger: true,
+                        total: meta.total,
+                        showTotal: (total, range) => {
+                            return (
+                                <div>
+                                    {" "}
+                                    {range[0]}-{range[1]} trên {total} dòng
+                                </div>
+                            )
+                        },
+                    }}
                     rowSelection={false}
                     toolBarRender={(_action, _rows): any => {
-                        return (
-                            <></>
-                        );
+                        return <></>
                     }}
                 />
             </Access>
@@ -235,4 +282,4 @@ const ResumePage = () => {
     )
 }
 
-export default ResumePage;
+export default ResumePage

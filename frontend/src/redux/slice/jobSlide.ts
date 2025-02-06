@@ -43,8 +43,11 @@ export const jobSlide = createSlice({
         setActiveMenu: (state, action) => {
             // state.activeMenu = action.payload;
         },
-
-
+        setState: (state, action) => {
+            state.isFetching = action.payload.isFetching;
+            state.meta = action.payload.meta;
+            state.result = action.payload.result;
+        }
     },
     extraReducers: (builder) => {
         // Add reducers for additional action types here, and handle loading state as needed
@@ -76,6 +79,7 @@ export const jobSlide = createSlice({
 
 export const {
     setActiveMenu,
+    setState
 } = jobSlide.actions;
 
 export default jobSlide.reducer;
