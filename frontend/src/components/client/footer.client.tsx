@@ -291,7 +291,7 @@ const Footer = () => {
       <Divider style={{ borderColor: "#A7A7A7" }} />
 
       <div className="text-center text-sm text-[#A7A7A7] mt-0 mb-1">
-        Copyright © Nhóm 3 Chuyên đề Dự án CNPM. All rights reserved.
+        Copyright © NICEJOB JSC. All rights reserved.
       </div>
     </footer>
   );
